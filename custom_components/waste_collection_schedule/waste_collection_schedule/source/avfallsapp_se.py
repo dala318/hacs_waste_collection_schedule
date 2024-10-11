@@ -37,6 +37,7 @@ ICON_MAP = {
     "Plast": "mdi:bottle-soda-classic-outline",
     "Tidning": "mdi:newspaper",
     "Deponi": "mdi:delete",
+    "Slam": "mdi:tanker-truck",
 }
 
 # See documentatation about possible other cities and service providers
