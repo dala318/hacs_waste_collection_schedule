@@ -10154,7 +10154,9 @@
           "calendar_title": "Calendar Title",
           "service_provider": "Service Provider",
           "street_address": "Street Address",
-          "api_key": "API Key from phone app"
+          "api_key": "API Key from phone app",
+          "bins": "Fetch bins pickup",
+          "sludge": "Fetch Sludge pickup"
         },
         "data_description": {
           "calendar_title": "A more readable, or user-friendly, name for the waste calendar. If nothing is provided, the name returned by the source will be used."
@@ -10167,7 +10169,9 @@
           "calendar_title": "Calendar Title",
           "service_provider": "Service Provider",
           "street_address": "Street Address",
-          "api_key": "API Key from phone app"
+          "api_key": "API Key from phone app",
+          "bins": "Fetch bins pickup",
+          "sludge": "Fetch Sludge pickup"
         },
         "data_description": {}
       },

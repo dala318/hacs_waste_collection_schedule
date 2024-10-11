@@ -65,6 +65,8 @@ class Source:
         service_provider: str,
         api_key: str | None = None,
         street_address: str | None = None,
+        bins: bool = True,
+        sludge: bool = False,
     ):
         # Raise an exception if the user did not provide api_key or street_address
         if not api_key and not street_address:
@@ -74,6 +76,9 @@ class Source:
             )
         self._api_key = api_key
         self._street_address = street_address
+        self._api_address = None
+        self._bins = bins
+        self._sludge = sludge
         # Get the api url using the service provider
         self._url = SERVICE_PROVIDERS.get(service_provider.lower(), {}).get("api_url")
         if self._url is None:
@@ -116,7 +121,7 @@ class Source:
             )
         self._api_key = uuid
 
-    def _register_address(self):
+    def _find_address(self):
         params = {"address": self._street_address.replace(" ", "%20")}
         # Use the street address to find the full street address with the building ID
         url = self._url + "/next-pickup/search"
@@ -156,9 +161,11 @@ class Source:
                 "street_address",
                 f"Failed to find building address for: {self._street_address}",
             )
+        self._api_address = address
 
+    def _register_address_bins(self):
         data = {
-            "plant_id": address["plant_number"],
+            "plant_id": self._api_address["plant_number"],
             "address_enabled": True,
             "notification_enabled": False,
         }
@@ -175,8 +182,37 @@ class Source:
         if response.ok:
             _LOGGER.info(
                 "Registrated new address %s with plant-id %s to API Key %s",
-                address["address"],
-                address["plant_number"],
+                self._api_address["address"],
+                self._api_address["plant_number"],
+                self._api_key,
+            )
+        else:
+            raise SourceArgumentException(
+                "street_address",
+                f"Failed to register new Address: {response.text}",
+            )
+
+    def _register_address_sludge(self):
+        data = {
+            "plant_id": self._api_address["plant_number"],
+            "address_enabled": True,
+            "notification_enabled": False,
+        }
+
+        # Set the address as the active address
+        response = requests.post(
+            self._url + "/sludge-suction/set-status",
+            json=data,
+            headers={"X-App-Identifier": self._api_key},
+            timeout=30,
+        )
+        response.raise_for_status()
+        data = json.loads(response.text)
+        if response.ok:
+            _LOGGER.info(
+                "Registrated new address %s with plant-id %s to API Key %s",
+                self._api_address["address"],
+                self._api_address["plant_number"],
                 self._api_key,
             )
         else:
@@ -186,9 +222,18 @@ class Source:
             )
 
     def fetch(self):
+        if not self._bins and not self._sludge:
+            raise SourceArgumentExceptionMultiple(
+                ["bins", "sludge"],
+                "At least one of bins or sludge must be set",
+            )
         if not self._api_key:
             self._register_device()
-            self._register_address()
+            self._find_address()
+            if self._bins:
+                self._register_address_bins()
+            if self._sludge:
+                self._register_address_sludge()
             # If fact everything was ok if reaching here, but need to store the registred API Key
             # in configuration by the user selecting it in config-flow dialog.
             raise SourceArgumentRequiredWithSuggestions(
@@ -196,11 +241,32 @@ class Source:
             )
 
         # Use the API key to get the waste collection schedule for registered addresses.
-        url = self._url + "/next-pickup/list?"
-        response = requests.get(
-            url, headers={"X-App-Identifier": self._api_key}, timeout=30
-        )
-        data = json.loads(response.text)
+        data = []
+        if self._bins:
+            url = self._url + "/next-pickup/list?"
+            response = requests.get(
+                url, headers={"X-App-Identifier": self._api_key}, timeout=30
+            )
+            data = json.loads(response.text)
+        if self._sludge:
+            url = self._url + "/sludge-suction/list?"
+            response = requests.get(
+                url, headers={"X-App-Identifier": self._api_key}, timeout=30
+            )
+            sludge_data = json.loads(response.text)
+            #  If no bins fetched, just add the sludge
+            if not data:
+                data = sludge_data
+            # If bins fetched the sludge needs to merged.
+            else:
+                for s in sludge_data:
+                    for b in data:
+                        if b.get("plant_id") == s.get("plant_id"):
+                            b["bins"].extend(s["bins"])
+                            break
+                    else:
+                        data.append(s)
+
         multi_config = False
         if len(data) > 1:
             multi_config = True

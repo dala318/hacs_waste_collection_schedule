@@ -54,6 +54,8 @@ waste_collection_schedule:
       args:
         service_provider: SERVICE_PROVIDER
         kpi_key: API Key
+        bins: True
+        sludge: False
 ```
 
 ### Configuration Variables
@@ -66,6 +68,12 @@ waste_collection_schedule:
 
 ***kpi_key***
 *(string) (optional)*
+
+***bins***
+*(bool) (optional)* default True
+
+***sludge***
+*(bool) (optional)* default False
 
 ## Examples
 
