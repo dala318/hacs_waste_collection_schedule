@@ -13,6 +13,7 @@ from homeassistant.const import CONF_NAME, CONF_VALUE_TEMPLATE
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.template import Template
+from homeassistant.helpers import entity_platform
 
 # fmt: off
 from custom_components.waste_collection_schedule.waste_collection_schedule.collection_aggregator import (
@@ -30,6 +31,7 @@ from .const import (
     CONF_SENSORS,
     CONF_SOURCE_INDEX,
     DOMAIN,
+    SERVICE_SCHEDULE_PICKUP,
     UPDATE_SENSORS_SIGNAL,
 )
 from .waste_collection_api import WasteCollectionApi
@@ -73,6 +75,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 async def async_setup_entry(hass, config: ConfigEntry, async_add_entities):
     coordinator = hass.data[DOMAIN][config.entry_id]
     aggregator = CollectionAggregator([coordinator.shell])
+    platform = entity_platform.async_get_current_platform()
     _LOGGER.debug("Adding sensors for %s", coordinator.shell.calendar_title)
     _LOGGER.debug("Config: %s", config)
 
@@ -114,6 +117,14 @@ async def async_setup_entry(hass, config: ConfigEntry, async_add_entities):
                 event_index=sensor.get(CONF_EVENT_INDEX),
             )
         )
+
+    platform.async_register_entity_service(
+        SERVICE_SCHEDULE_PICKUP,
+        {
+            # vol.Required('entity'): cv.string,
+        },
+        "async_request_new_pickup",
+    )
 
     async_add_entities(entities, update_before_add=True)
 
@@ -289,6 +300,15 @@ class ScheduleSensor(SensorEntity):
             )
         else:
             return collection.date.isoformat()
+
+    async def async_request_new_pickup(self) -> None:
+        """Request new pickup to be scheduled"""
+        self._aggregator.schedule_pickup(
+            count=1,
+            include_types=self._collection_types,
+            include_today=self._include_today,
+            start_index=self._event_index,
+        )
 
     @callback
     def _update_sensor(self):

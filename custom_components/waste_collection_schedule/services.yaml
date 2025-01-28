@@ -1,3 +1,11 @@
 fetch_data:
   name: Fetch data from all sources.
   description: Fetch data from all sources.
+
+schedule_pickup:
+  name: Schedule a pickup.
+  description: Request a bin pick-up to be scheduled.
+  target:
+    entity:
+      integration: waste_collection_schedule
+      domain: sensor

@@ -44,11 +44,13 @@ class Collection(CollectionBase):
         self,
         date: datetime.date,
         t: str,
+        s: Optional[bool] = False,
         icon: Optional[str] = None,
         picture: Optional[str] = None,
     ):
         CollectionBase.__init__(self, date=date, icon=icon, picture=picture)
         self["type"] = t
+        self["scheduable"] = s
 
     @property
     def type(self) -> str:
@@ -56,6 +58,12 @@ class Collection(CollectionBase):
 
     def set_type(self, t: str):
         self["type"] = t
+
+    def schedule_pickup(self) -> bool:
+        if self["scheduable"]:
+            # do something to schedule pickup
+            return True
+        return False
 
     def __repr__(self):
         return f"Collection{{date={self.date}, type={self.type}}}"

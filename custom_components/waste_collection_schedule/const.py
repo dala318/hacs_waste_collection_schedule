@@ -10,6 +10,8 @@ UPDATE_SENSORS_SIGNAL: Final = "wcs_update_sensors_signal"
 CONFIG_VERSION: Final = 2
 CONFIG_MINOR_VERSION: Final = 4
 
+SERVICE_SCHEDULE_PICKUP: Final = "schedule_pickup"
+
 # Config var names
 CONF_SOURCES: Final = "sources"
 

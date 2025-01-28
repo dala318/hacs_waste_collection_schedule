@@ -29,6 +29,28 @@ class CollectionAggregator:
         """Return set() of all collection types."""
         return {e.type for e in self._entries}
 
+    def schedule_pickup(
+        self,
+        count: int | None = None,
+        leadtime: int | None = None,
+        include_types: Iterable[str] | None = None,
+        exclude_types: Iterable[str] | None = None,
+        include_today: bool = False,
+        start_index: int | None = None,
+    ) -> bool:
+        success = False
+        for e in self._filter(
+            self._entries,
+            count=count,
+            leadtime=leadtime,
+            include_types=include_types,
+            exclude_types=exclude_types,
+            include_today=include_today,
+            start_index=start_index,
+        ):
+            success = success or e.schedule_pickup()
+        return success
+
     def get_upcoming(
         self,
         count: int | None = None,
